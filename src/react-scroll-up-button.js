@@ -1,60 +1,58 @@
-import React from 'react';
-import TweenFunctions from 'tween-functions';
-import PropTypes from 'prop-types';
-import detectPassiveEvents from 'detect-passive-events';
+import React from "react";
+import TweenFunctions from "tween-functions";
+import PropTypes from "prop-types";
+import detectPassiveEvents from "detect-passive-events";
 
 class ScrollUpButton extends React.Component {
   constructor(props) {
-    super(props)
-    this.state = { ToggleScrollUp: '' };
+    super(props);
+    this.state = { ToggleScrollUp: "" };
     this.Animation = {
       StartPosition: 0,
       CurrentAnimationTime: 0,
       StartTime: null,
-      AnimationFrame: null,
-    }
-    this.HandleScroll = this.HandleScroll.bind(this)
-    this.StopScrollingFrame = this.StopScrollingFrame.bind(this)
-    this.ScrollingFrame = this.ScrollingFrame.bind(this)
-    this.HandleClick = this.HandleClick.bind(this)
+      AnimationFrame: null
+    };
+    this.HandleScroll = this.HandleScroll.bind(this);
+    this.StopScrollingFrame = this.StopScrollingFrame.bind(this);
+    this.ScrollingFrame = this.ScrollingFrame.bind(this);
+    this.HandleClick = this.HandleClick.bind(this);
+    this.Wrapper = this.GetWrapper.bind(this);
   }
 
   componentDidMount() {
     this.HandleScroll(); // run HandleScroll() at mount incase we are already scrolled down
-    window.addEventListener('scroll', this.HandleScroll);
+    this.Wrapper.addEventListener("scroll", this.HandleScroll);
     window.addEventListener(
-      'wheel',
+      "wheel",
       this.StopScrollingFrame,
-      detectPassiveEvents.hasSupport
-        ? { passive: true }
-        : false
+      detectPassiveEvents.hasSupport ? { passive: true } : false
     ); // Stop animation if user mouse wheels during animation.
     window.addEventListener(
-      'touchstart',
+      "touchstart",
       this.StopScrollingFrame,
-      detectPassiveEvents.hasSupport
-        ? { passive: true }
-        : false
+      detectPassiveEvents.hasSupport ? { passive: true } : false
     ); // Stop animation if user touches the screen during animation.
   }
 
   componentWillUnmount() {
     // Remove all events, since component is no longer mounted.
-    window.removeEventListener('scroll', this.HandleScroll);
-    window.removeEventListener('wheel', this.StopScrollingFrame, false);
-    window.removeEventListener('touchstart', this.StopScrollingFrame, false);
+    this.Wrapper.removeEventListener("scroll", this.HandleScroll);
+    window.removeEventListener("wheel", this.StopScrollingFrame, false);
+    window.removeEventListener("touchstart", this.StopScrollingFrame, false);
   }
 
   HandleScroll() {
-    const { ShowAtPosition, TransitionClassName } = this.props
+    const { ShowAtPosition, TransitionClassName } = this.props;
+    const scrollTopWrapper = this.GetScrollTopWrapper();
     // window.pageYOffset = current scroll position
     // ShowAtPosition = position at which we want the button to show.
-    if (window.pageYOffset > ShowAtPosition) {
+    if (scrollTopWrapper > ShowAtPosition) {
       // styles.Toggled = the class name we want applied to transition the button in.
       this.setState({ ToggleScrollUp: TransitionClassName });
     } else {
       // remove the class name
-      this.setState({ ToggleScrollUp: '' });
+      this.setState({ ToggleScrollUp: "" });
     }
   }
 
@@ -67,17 +65,38 @@ class ScrollUpButton extends React.Component {
     //   this.HandleScroll()
     // }
     // Scroll to StopPosition
-    this.StopScrollingFrame();// Stoping all AnimationFrames
-    this.Animation.StartPosition = window.pageYOffset;// current scroll position
+    this.StopScrollingFrame(); // Stoping all AnimationFrames
+    this.Animation.StartPosition = window.pageYOffset; // current scroll position
     this.Animation.CurrentAnimationTime = 0;
     this.Animation.StartTime = null;
     // Start the scrolling animation.
-    this.Animation.AnimationFrame = window.requestAnimationFrame(this.ScrollingFrame);
+    this.Animation.AnimationFrame = window.requestAnimationFrame(
+      this.ScrollingFrame
+    );
+  }
+
+  GetWrapper() {
+    const { WrapperClassName } = this.props;
+
+    if (!WrapperClassName) {
+      return window;
+    }
+
+    return document.getElementsByClassName(WrapperClassName)[0];
+  }
+
+  GetScrollTopWrapper() {
+    if (this.Wrapper == window) {
+      return window.pageYOffset;
+    } else {
+      return document.getElementsByClassName(this.Wrapper)[0].scrollTop;
+    }
   }
 
   ScrollingFrame() {
-    const { StopPosition, EasingType, AnimationDuration } = this.props
+    const { StopPosition, EasingType, AnimationDuration } = this.props;
     const timestamp = Math.floor(Date.now());
+    const scrollTopWrapper = this.GetScrollTopWrapper();
     // If StartTime has not been assigned a value, assign it the start timestamp.
     if (!this.Animation.StartTime) {
       this.Animation.StartTime = timestamp;
@@ -86,7 +105,7 @@ class ScrollUpButton extends React.Component {
     // set CurrentAnimationTime every iteration of ScrollingFrame()
     this.Animation.CurrentAnimationTime = timestamp - this.Animation.StartTime;
     // if we hit the StopPosition, StopScrollingFrame()
-    if (window.pageYOffset <= StopPosition) {
+    if (scrollTopWrapper <= StopPosition) {
       this.StopScrollingFrame();
     } else {
       // Otherwise continue ScrollingFrame to the StopPosition.
@@ -99,11 +118,13 @@ class ScrollUpButton extends React.Component {
         AnimationDuration
       );
       if (YPos <= StopPosition) {
-        YPos = StopPosition
+        YPos = StopPosition;
       }
       window.scrollTo(0, YPos);
       // Request another frame to be painted
-      this.Animation.AnimationFrame = window.requestAnimationFrame(this.ScrollingFrame);
+      this.Animation.AnimationFrame = window.requestAnimationFrame(
+        this.ScrollingFrame
+      );
     }
   }
 
@@ -115,44 +136,40 @@ class ScrollUpButton extends React.Component {
   render() {
     const styles = {
       MainStyle: {
-        backgroundColor: 'rgba(50, 50, 50, 0.5)',
+        backgroundColor: "rgba(50, 50, 50, 0.5)",
         height: 50,
-        position: 'fixed',
+        position: "fixed",
         bottom: 20,
         width: 50,
-        WebkitTransition: 'all 0.5s ease-in-out',
-        transition: 'all 0.5s ease-in-out',
-        transitionProperty: 'opacity, right',
-        cursor: 'pointer',
+        WebkitTransition: "all 0.5s ease-in-out",
+        transition: "all 0.5s ease-in-out",
+        transitionProperty: "opacity, right",
+        cursor: "pointer",
         opacity: 0,
         right: -50,
-        zIndex: 1000,
+        zIndex: 1000
       },
       SvgStyle: {
-        display: 'inline-block',
-        width: '100%',
-        height: '100%',
+        display: "inline-block",
+        width: "100%",
+        height: "100%",
         strokeWidth: 0,
-        stroke: 'white',
-        fill: 'white',
+        stroke: "white",
+        fill: "white"
       },
       ToggledStyle: {
         opacity: 1,
-        right: 20,
-      },
-    }
-    const {
-      children,
-      style,
-      ToggledStyle,
-      ContainerClassName,
-    } = this.props
-    const { ToggleScrollUp } = this.state
+        right: 20
+      }
+    };
+    const { children, style, ToggledStyle, ContainerClassName } = this.props;
+    const { ToggleScrollUp } = this.state;
     if (children) {
-      const childrenWithProps = React.Children.map(children,
-        child => React.cloneElement(child, {
-          className: this.className,
-        }));
+      const childrenWithProps = React.Children.map(children, child =>
+        React.cloneElement(child, {
+          className: this.className
+        })
+      );
       return (
         <aside
           role="button"
@@ -161,8 +178,7 @@ class ScrollUpButton extends React.Component {
           data-testid="react-scroll-up-button"
           style={{
             ...style,
-            ...(ToggleScrollUp
-              && ToggledStyle),
+            ...(ToggleScrollUp && ToggledStyle)
           }}
           className={`${ContainerClassName} ${ToggleScrollUp}`}
           onClick={this.HandleClick}
@@ -182,10 +198,8 @@ class ScrollUpButton extends React.Component {
         style={{
           ...styles.MainStyle,
           ...style,
-          ...(ToggleScrollUp
-            && styles.ToggledStyle),
-          ...(ToggleScrollUp
-            && ToggledStyle),
+          ...(ToggleScrollUp && styles.ToggledStyle),
+          ...(ToggleScrollUp && ToggledStyle)
         }}
         onClick={this.HandleClick}
         onKeyPress={this.HandleClick}
@@ -208,44 +222,44 @@ class ScrollUpButton extends React.Component {
     );
   }
 }
-export default ScrollUpButton
+export default ScrollUpButton;
 
-export const TinyButton = (props) => {
+export const TinyButton = props => {
   const styles = {
     MainStyle: {
-      backgroundColor: 'rgb(87, 86, 86)',
+      backgroundColor: "rgb(87, 86, 86)",
       height: 30,
-      position: 'fixed',
+      position: "fixed",
       bottom: 20,
       width: 30,
-      WebkitTransition: 'all 0.5s ease-in-out',
-      transition: 'all 0.5s ease-in-out',
-      transitionProperty: 'opacity, right',
-      cursor: 'pointer',
+      WebkitTransition: "all 0.5s ease-in-out",
+      transition: "all 0.5s ease-in-out",
+      transitionProperty: "opacity, right",
+      cursor: "pointer",
       opacity: 0,
       right: -75,
       zIndex: 1000,
-      fill: '#292929',
+      fill: "#292929",
       paddingBottom: 1,
       paddingLeft: 1,
-      paddingRight: 1,
+      paddingRight: 1
     },
     ToggledStyle: {
       opacity: 1,
-      right: 30,
-    },
-  }
-  const { style, ToggledStyle } = props
+      right: 30
+    }
+  };
+  const { style, ToggledStyle } = props;
   return (
     <ScrollUpButton
       {...props}
       style={{
         ...styles.MainStyle,
-        ...style,
+        ...style
       }}
       ToggledStyle={{
         ...styles.ToggledStyle,
-        ...ToggledStyle,
+        ...ToggledStyle
       }}
     >
       <svg
@@ -262,41 +276,41 @@ export const TinyButton = (props) => {
       </svg>
     </ScrollUpButton>
   );
-}
+};
 
-export const CircleArrow = (props) => {
+export const CircleArrow = props => {
   const styles = {
     MainStyle: {
-      backgroundColor: 'rgb(255, 255, 255)',
-      borderRadius: '50%',
-      border: '5px solid black',
+      backgroundColor: "rgb(255, 255, 255)",
+      borderRadius: "50%",
+      border: "5px solid black",
       height: 50,
-      position: 'fixed',
+      position: "fixed",
       bottom: 20,
       width: 50,
-      WebkitTransition: 'all 0.5s ease-in-out',
-      transition: 'all 0.5s ease-in-out',
-      transitionProperty: 'opacity, right',
-      cursor: 'pointer',
+      WebkitTransition: "all 0.5s ease-in-out",
+      transition: "all 0.5s ease-in-out",
+      transitionProperty: "opacity, right",
+      cursor: "pointer",
       opacity: 0,
-      right: -75,
+      right: -75
     },
     ToggledStyle: {
       opacity: 1,
-      right: 20,
-    },
-  }
-  const { style, ToggledStyle } = props
+      right: 20
+    }
+  };
+  const { style, ToggledStyle } = props;
   return (
     <ScrollUpButton
       {...props}
       style={{
         ...styles.MainStyle,
-        ...style,
+        ...style
       }}
       ToggledStyle={{
         ...styles.ToggledStyle,
-        ...ToggledStyle,
+        ...ToggledStyle
       }}
     >
       <svg viewBox="0 0 32 32">
@@ -306,67 +320,72 @@ export const CircleArrow = (props) => {
       </svg>
     </ScrollUpButton>
   );
-}
+};
 
-export const VerticleButton = (props) => {
+export const VerticleButton = props => {
   const styles = {
     MainStyle: {
-      backgroundColor: 'rgb(58, 56, 56)',
-      position: 'fixed',
+      backgroundColor: "rgb(58, 56, 56)",
+      position: "fixed",
       bottom: 40,
-      padding: '5px 10px',
-      WebkitTransition: 'all 0.5s ease-in-out',
-      transition: 'all 0.5s ease-in-out',
-      transitionProperty: 'opacity, right',
-      cursor: 'pointer',
+      padding: "5px 10px",
+      WebkitTransition: "all 0.5s ease-in-out",
+      transition: "all 0.5s ease-in-out",
+      transitionProperty: "opacity, right",
+      cursor: "pointer",
       opacity: 0,
       right: -75,
-      transform: 'rotate(-90deg)',
+      transform: "rotate(-90deg)"
     },
     ToggledStyle: {
       opacity: 1,
-      right: 10,
-    },
-  }
-  const { style, ToggledStyle } = props
+      right: 10
+    }
+  };
+  const { style, ToggledStyle } = props;
   return (
     <ScrollUpButton
       {...props}
       style={{
         ...styles.MainStyle,
-        ...style,
+        ...style
       }}
       ToggledStyle={{
         ...styles.ToggledStyle,
-        ...ToggledStyle,
+        ...ToggledStyle
       }}
     >
-      <span style={{ fontSize: 23, color: 'white' }}>UP &#8594;</span>
+      <span style={{ fontSize: 23, color: "white" }}>UP &#8594;</span>
     </ScrollUpButton>
   );
-}
+};
 
 ScrollUpButton.defaultProps = {
-  ContainerClassName: 'ScrollUpButton__Container',
+  ContainerClassName: "ScrollUpButton__Container",
   StopPosition: 0,
   ShowAtPosition: 150,
-  EasingType: 'easeOutCubic',
+  EasingType: "easeOutCubic",
   AnimationDuration: 500,
-  TransitionClassName: 'ScrollUpButton__Toggled',
+  TransitionClassName: "ScrollUpButton__Toggled",
   style: {},
   ToggledStyle: {},
   children: null,
-}
+  WrapperClassName: null
+};
 
 function LessThanShowAtPosition(props, propName, componentName) {
   const { ShowAtPosition } = props;
-  if (props[propName]) { // eslint-disable-line
+  if (props[propName]) {
+    // eslint-disable-line
     const value = props[propName];
-    if (typeof value === 'number') {
-      if (value >= ShowAtPosition) { // Validate the incoming prop value againt the ShowAtPosition prop
-        return new Error(`${propName} (${value}) in ${componentName} must be less then prop: ShowAtPosition (${ShowAtPosition})`);
+    if (typeof value === "number") {
+      if (value >= ShowAtPosition) {
+        // Validate the incoming prop value againt the ShowAtPosition prop
+        return new Error(
+          `${propName} (${value}) in ${componentName} must be less then prop: ShowAtPosition (${ShowAtPosition})`
+        );
       }
-      return null
+      return null;
     }
     return new Error(`${propName} in ${componentName} must be a number.`);
   }
@@ -376,19 +395,47 @@ function LessThanShowAtPosition(props, propName, componentName) {
 ScrollUpButton.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node,
+    PropTypes.node
   ]),
   StopPosition: LessThanShowAtPosition,
   ShowAtPosition: PropTypes.number, // show button under this position,
-  EasingType: PropTypes.oneOf(['linear', 'easeInQuad', 'easeOutQuad', 'easeInOutQuad', 'easeInCubic',
-    'easeOutCubic', 'easeInOutCubic', 'easeInQuart', 'easeOutQuart', 'easeInOutQuart', 'easeInQuint',
-    'easeOutQuint', 'easeInOutQuint', 'easeInSine', 'easeOutSine', 'easeInOutSine', 'easeInExpo', 'easeOutExpo',
-    'easeInOutExpo', 'easeInCirc', 'easeOutCirc', 'easeInOutCirc', 'easeInElastic', 'easeOutElastic',
-    'easeInOutElastic', 'easeInBack', 'easeOutBack', 'easeInOutBack', 'easeInBounce', 'easeOutBounce',
-    'easeInOutBounce']),
+  EasingType: PropTypes.oneOf([
+    "linear",
+    "easeInQuad",
+    "easeOutQuad",
+    "easeInOutQuad",
+    "easeInCubic",
+    "easeOutCubic",
+    "easeInOutCubic",
+    "easeInQuart",
+    "easeOutQuart",
+    "easeInOutQuart",
+    "easeInQuint",
+    "easeOutQuint",
+    "easeInOutQuint",
+    "easeInSine",
+    "easeOutSine",
+    "easeInOutSine",
+    "easeInExpo",
+    "easeOutExpo",
+    "easeInOutExpo",
+    "easeInCirc",
+    "easeOutCirc",
+    "easeInOutCirc",
+    "easeInElastic",
+    "easeOutElastic",
+    "easeInOutElastic",
+    "easeInBack",
+    "easeOutBack",
+    "easeInOutBack",
+    "easeInBounce",
+    "easeOutBounce",
+    "easeInOutBounce"
+  ]),
   AnimationDuration: PropTypes.number, // seconds
   style: PropTypes.object, // eslint-disable-line react/forbid-prop-types
   ToggledStyle: PropTypes.object, // eslint-disable-line react/forbid-prop-types
   ContainerClassName: PropTypes.string,
   TransitionClassName: PropTypes.string,
-}
+  WrapperClassName: PropTypes.string
+};
